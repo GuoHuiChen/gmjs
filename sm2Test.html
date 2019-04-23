@@ -27,7 +27,6 @@
         <!--
         	不必要的js
         -->
-        <script src="js/utils/core.js"></script>
         <script src="js/utils/jquery-3.3.1.min.js"></script>
         
         <style> 
@@ -110,7 +109,7 @@
 			 */
 			function generate(len){
                 var realLen = 0;
-                if(len != undefined || len > 0){
+                if(len != undefined && len > 0){
                 	realLen = len;
                 }else{
                 	realLen = parseInt(Math.random()*1024)+1;
@@ -145,9 +144,9 @@
 				if(inputtext.length <= 0){
 					alert("输入数据不能为空");
 				}
-				var sm2Data = CryptoJS.enc.Utf8.parse(inputtext);//转成byte数组
-                var sm2DataHex = sm2Data.toString();
+				var sm2DataHex = Hex.utf8StrToHex(inputtext);//转成byte数组
                 console.log(sm2DataHex);
+                
                 //sm2加密
                 var sm2 = new SM2();
                 var cipher = sm2.encrypt(pubkey,sm2DataHex);//函数输入输出都是16进制数据
@@ -171,9 +170,8 @@
                 //sm2加密
                 var sm2 = new SM2();
                 var plain = sm2.decrypt(privkey,inputtext);
-                var wordArray = CryptoJS.enc.Hex.parse(plain);
-				
-				var utf8Str = CryptoJS.enc.Utf8.stringify(wordArray);
+                
+				var utf8Str = Hex.hexToUtf8Str(plain);
 				$("#crypttext").val(utf8Str);
 			});
 
