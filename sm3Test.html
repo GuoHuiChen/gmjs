@@ -54,6 +54,24 @@
 				var inputtext = $("#inputtext").val();
 				//这一步是先将输入数据转成utf-8编码的字节流，然后再转成16进制可见字符
 				var dataHex = CryptoJS.enc.Utf8.parse(inputtext).toString();
+				console.log("cpt-hex:"+dataHex);
+				utf8StrToHex(inputtext);
+				
+				var dataBy = Hex.decode(dataHex);//转成byte数据
+				
+				
+				var sm3 = new SM3Digest();
+				sm3.update(dataBy,0,dataBy.length);//数据很多的话，可以分多次update
+				var sm3Hash = sm3.doFinal();//得到的数据是个byte数组
+				var sm3HashHex = Hex.encode(sm3Hash,0,sm3Hash.length);//编码成16进制可见字符
+				$("#crypttext").val(sm3HashHex);
+			});
+			
+			$("#btn_test").click(function(){
+				var inputtext = $("#inputtext").val();
+				//这一步是先将输入数据转成utf-8编码的字节流，然后再转成16进制可见字符
+				var dataHex = CryptoJS.enc.Utf8.parse(inputtext).toString();
+				utf8StrToHex(inputtext);
 				
 				var dataBy = Hex.decode(dataHex);//转成byte数据
 				

@@ -55,6 +55,56 @@ Hex.decode = function(hex) {
     return asc;
 }
 
+Hex.utf8StrToHex = function(utf8Str){
+	var ens = encodeURIComponent(utf8Str);
+	var es = unescape(ens);
+	
+	
+	var esLen = es.length;
+
+    // Convert
+    var words = [];
+    for (var i = 0; i < esLen; i++) {
+        words[i] = (es.charCodeAt(i).toString(16));
+    }
+    return words.join('');
+}
+
+Hex.utf8StrToBytes = function(utf8Str){
+	var ens = encodeURIComponent(utf8Str);
+	var es = unescape(ens);
+	
+	
+	var esLen = es.length;
+
+    // Convert
+    var words = [];
+    for (var i = 0; i < esLen; i++) {
+        words[i] = es.charCodeAt(i);
+    }
+    return words;
+}
+
+Hex.hexToUtf8Str = function(utf8Str){
+	
+	var utf8Byte = Hex.decode(utf8Str);
+    var latin1Chars = [];
+    for (var i = 0; i < utf8Byte.length; i++) {
+        latin1Chars.push(String.fromCharCode(utf8Byte[i]));
+    }
+    return decodeURIComponent(escape(latin1Chars.join('')));
+}
+
+Hex.bytesToUtf8Str = function(bytesArray){
+	
+	var utf8Byte = bytesArray;
+    var latin1Chars = [];
+    for (var i = 0; i < utf8Byte.length; i++) {
+        latin1Chars.push(String.fromCharCode(utf8Byte[i]));
+    }
+    return decodeURIComponent(escape(latin1Chars.join('')));
+}
+
 Hex.toCharCodeArray = function(chs){
     var chArr = new Array(chs.length);
     for(var i = 0;i<chs.length;i++){

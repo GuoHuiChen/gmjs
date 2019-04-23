@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+        
+        <script src="js/utils/hex.js"></script>
+        <script src="js/utils/byteUtil.js"></script> 
+		<script src="js/crypto/sm4-1.0.js"></script>
+        
+        <script src="js/utils/core.js"></script>
+        <script src="js/utils/jquery-3.3.1.min.js"></script>
+	</head>
+	<body>
+		<div style="text-align:center;">
+		<form action="#" method="post" >
+			
+			<table  style="margin-left: auto;margin-right: auto;"><!--border=0 cellpadding=0 cellspacing=0-->
+	            <tr>
+	                <td style="width:auto;text-align: right;">
+	             		输入密钥：
+	                </td>
+	                <td style="text-align: left;"  valign="middle">
+	                    <textarea rows="5" cols="50" name="keytext" id="keytext"></textarea>
+	                </td>
+	            </tr>
+	            <tr>
+	                <td style="width:auto;text-align: right;">
+	             		输入数据：
+	                </td>
+	                <td style="text-align: left;"  valign="middle">
+	                    <textarea rows="5" cols="50" name="inputtext" id="inputtext"></textarea>
+	                </td>
+	            </tr>
+	            <tr>
+	                <td style="width:auto;text-align: right;">
+	                                                             结果：
+	                </td>
+	                <td style="text-align: left;"  valign="middle">
+	                    <textarea rows="5" cols="50" name="resulttext" id="resulttext"></textarea>
+	                </td>
+	            </tr>
+	            
+	            <tr>
+	                <td colspan="2" style="width:auto;text-align: center;">
+	                	<input type="button" value="加密" id="btn_enc"/>
+	                    <input type="button" value="解密" id="btn_dec"/>
+	                </td>
+		      	</tr>
+	      </table>
+			
+		</form>
+		</div>
+		<script>
+			
+			/*
+			 * 测试sm4加密
+			 */
+			$("#btn_enc").click(function(){
+				
+				var inputtext = $("#inputtext").val();
+				var inputBytes = Hex.utf8StrToBytes(inputtext);
+							
+				var keytext = $("#keytext").val();
+				var key = Hex.decode(keytext);
+				
+				var sm4 = new SM4();
+				var cipher = sm4.encrypt_ecb(key,inputBytes);
+				
+				$("#resulttext").val(Hex.encode(cipher,0,cipher.length))
+			});
+			
+			/*
+			 * 测试sm4解密
+			 */
+			$("#btn_dec").click(function(){
+				
+				var inputtext = $("#inputtext").val();
+				var inputBytes = Hex.decode(inputtext);
+							
+				var keytext = $("#keytext").val();
+				var key = Hex.decode(keytext);
+				
+				var sm4 = new SM4();
+				var plain = sm4.decrypt_ecb(key,inputBytes);				
+				$("#resulttext").val(Hex.bytesToUtf8Str(plain))
+			});
+			
+			
+		</script>
+    </body>
+</html>
