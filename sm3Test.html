@@ -59,6 +59,7 @@
 				var sm3Hash = sm3.doFinal();//得到的数据是个byte数组
 				var sm3HashHex = Hex.encode(sm3Hash,0,sm3Hash.length);//编码成16进制可见字符
 				$("#crypttext").val(sm3HashHex);
+				sm3.testf("from html");
 			});
 			
 			/*

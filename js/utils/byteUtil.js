@@ -80,11 +80,11 @@ function byteToInt(b,pos) {
 	if(pos+3<b.length) {
 		return ((b[pos])<<24) | ((b[pos+1])<<16) | ((b[pos+2])<<8) | ((b[pos+3]));			
 	}else if(pos+2<b.length) {
-		return ((b[pos])<<24) | ((b[pos+1])<<16) | ((b[pos+2])<<8);
+		return ((b[pos+1])<<16) | ((b[pos+2])<<8 )  | ((b[pos+3]));
 	}else if(pos+1<b.length) {
-		return ((b[pos])<<24) | ((b[pos+1])<<16);
+		return ((b[pos])<<8) | ((b[pos+1]));
 	}else {
-		return ((b[pos])<<24);
+		return ((b[pos]));
 	}
 }
 

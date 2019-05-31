@@ -42,6 +42,7 @@ function SM3Digest(){
 		}
 	}
 	arrayCopy(this.iv, 0, this.vbuf, 0, this.vbuf.length);
+	
 }
 
 
@@ -244,7 +245,6 @@ SM3Digest.prototype = {
 	},
 	
 	doFinal:function() {
-			
 		var mac;
 		var finalData = new Array(this.dataBufLen);
 		

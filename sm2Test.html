@@ -94,7 +94,7 @@
 						<input type="button" value="生成公私钥" id="btn_genkey"/>
 	                	<input type="button" value="加密" id="btn_enc"/>
 	                	<input type="button" value="解密" id="btn_dec"/>
-	                    <input type="button" value="随机测试" id="btn_test"/>
+	                    <input type="button" value="开始随机测试" id="btn_test"/>
 	                </td>
 		      	</tr>
 	      </table>
@@ -116,7 +116,7 @@
                 }
 				var data = new Array(realLen);
 				
-				for(var i = 0;i<len;i++){
+				for(var i = 0;i<realLen;i++){
 					data[i] = parseInt(Math.random()*256);
 				}
 				return data;
@@ -182,7 +182,7 @@
 			 */
 			function testSm2(){
 				
-				var dataBy = generate(0);
+				var dataBy = generate(count);
 				
 				var sm2 = new SM2();
 				var keyPair = sm2.generateKeyPairHex();//得到的keypair结构：{'privkeyhex': hPrv, 'pubkeyhex': hPub}
@@ -219,13 +219,30 @@
 				
 			}
 			
-			$("#btn_test").click(function(){
-				
-				for(var i = 0;i<1;i++){
-						setInterval("testSm2()", 1);
-				}
-			});
 			
+			var isKeepLoop = 1;
+			function loopTest(){
+				if(isKeepLoop > 0){
+					testSm2();
+		        	setTimeout("loopTest()", 1);
+				}else{
+					
+				}
+		    }
+			
+			$("#btn_test").click(function(){
+				var dowhat = $("#btn_test").val();
+				
+				if(dowhat == "开始随机测试"){
+					isKeepLoop = 1;
+					loopTest();
+					$("#btn_test").val("停止随机测试");
+				}else{
+					isKeepLoop = 0;
+					$("#btn_test").val("开始随机测试");
+				}
+				
+			});
 			
 		</script>
 	</body>

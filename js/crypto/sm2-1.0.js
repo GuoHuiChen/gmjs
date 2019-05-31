@@ -207,22 +207,27 @@ SM2.prototype = {
 		}
 
 		
-		cipher = new Array(96+c2.length);
+//		cipher = new Array(96+c2.length);
 		
-		var c1x = this.formartXY(c1.getX().toBigInteger(), 32);
-		var c1y = this.formartXY(c1.getY().toBigInteger(), 32);
-		arrayCopy(c1x, 0, cipher, 0, c1x.length);
+		/*var c1x = this.formartXY(c1.getX().toBigInteger(), 33);
+		var c1y = this.formartXY(c1.getY().toBigInteger(), 33);*/
+		var c1x = c1.getX().toBigInteger().toByteArray();
+		var c1y = c1.getY().toBigInteger().toByteArray();
+		/*arrayCopy(c1x, 0, cipher, 0, c1x.length);
 		arrayCopy(c1y, 0, cipher, c1x.length, c1y.length);
 		arrayCopy(c3, 0, cipher, c1x.length+c1y.length, c3.length);
 		arrayCopy(c2, 0, cipher, c1x.length+c1y.length+c3.length, c2.length);
-				
+		console.log(Hex.encode(cipher,0,cipher.length));*/
+		var cipher = this.cipherToDer(c1x,c1y,c2,c3);
 		
 		return Hex.encode(cipher,0,cipher.length);
 	},
 	decrypt:function(privkey,cipherHex) {
 		cipher = Hex.decode(cipherHex);
+		var dec = this.derDecode(cipher);
+		
 		var c1 = new Array(64+1);
-		var c2 = new Array(cipher.length-96);
+		var c2 = new Array(dec["c2"].length);
 		var c3 = new Array(32);
 		
 		//1、创建sm2曲线，截取密文前64字节，转化为点（x1,y1）
@@ -230,7 +235,8 @@ SM2.prototype = {
 		//3、x2y2通过kdf算法得到字符串t，t再和密文c2做异或运算，得到明文M
 		//4、x2||M||y2 拼接，然后做sm3运算，得到hash值，对比密文的c3，一致则解密成功
 		
-		arrayCopy(cipher, 0, c1, 1, c1.length-1);
+		arrayCopy(dec["c1x"], dec["c1x"].length-32, c1, 1, 32);
+		arrayCopy(dec["c1y"], dec["c1y"].length-32, c1, 1+32, 32);
 		c1[0] = 0x04;
 		var c1Point = ECPointFp.decodeFromHex(this.ecCurve,Hex.encode(c1,0,c1.length));
 		
@@ -241,7 +247,7 @@ SM2.prototype = {
 		arrayCopy(x2, 0, xy, 0, x2.length);
 		arrayCopy(y2, 0, xy, x2.length, y2.length);
 		
-		arrayCopy(cipher, c1.length+c3.length-1, c2, 0, c2.length);
+		arrayCopy(dec["c2"], 0, c2, 0, c2.length);
 		var c2Copy = new Array(c2.length);
 		arrayCopy(c2, 0, c2Copy, 0, c2.length);
 		this.kdf(xy, c2);
@@ -252,17 +258,127 @@ SM2.prototype = {
 		
 		var sm3 = new SM3Digest();
 		var hash = new Array(32);
-		arrayCopy(cipher, c1.length-1, c3, 0, c3.length);
+//		arrayCopy(cipher, c1.length-1, c3, 0, c3.length);
 		sm3.update(x2,0,x2.length);
 		sm3.update(c2,0,c2.length);
 		sm3.update(y2,0,y2.length);
 		hash = sm3.doFinal();
 		
-		if(this.arrayCompare(hash, 0, cipher, c1.length-1, 32) != 0) {
+		if(this.arrayCompare(hash, 0, dec["c3"], 0, 32) != 0) {
 			return null;
 		}
 		
 		
 		return Hex.encode(c2,0,c2.length);
+	},
+	cipherToDer:function(c1x,c1y,c2,c3){
+		var c2Len = c2.length;
+		var c2Tag = [];
+		if(c2Len < 0x80){
+			c2Tag[0] = 0x04;
+			c2Tag[1] = c2Len;
+		}else{
+			c2Tag[0] = 0x04;
+			var c2LenBytes = intToByte(c2Len);
+			var i = 0;
+			while(c2LenBytes[i] == 0 && i < c2LenBytes.length){
+				i++;
+			}
+			c2Tag[1] = 0x80 | (c2LenBytes.length - i);
+			for(var j = 2;i<c2LenBytes.length;i++,j++){
+				c2Tag[j] = c2LenBytes[i];
+			}
+		}
+		var totalTagLen = c1x.length+c1y.length+c2.length+c3.length+6+c2Tag.length;
+		var totalTag = [];
+		totalTag[0] = 0x30;
+		if(totalTagLen < 0x80){
+			totalTag[1] = totalTagLen;
+		}else{
+			var totalTagLenBytes = intToByte(totalTagLen);
+			var i = 0;
+			while(totalTagLenBytes[i] == 0 && i < totalTagLenBytes.length){
+				i++;
+			}
+			totalTag[1] = 0x80 | (totalTagLenBytes.length - i);
+			for(var j = 2;i<totalTagLenBytes.length;i++,j++){
+				totalTag[j] = totalTagLenBytes[i];
+			}
+		}
+		
+		var der = new Array(totalTagLen+totalTag.length);
+		var derLen = 0;
+		
+		arrayCopy(totalTag, 0, der, 0, totalTag.length);
+		derLen += totalTag.length;
+		
+		der[derLen++] = 0x02;
+		der[derLen++] = c1x.length;
+		arrayCopy(c1x, 0, der, derLen, c1x.length);
+		derLen += c1x.length;
+		
+		der[derLen++] = 0x02;
+		der[derLen++] = c1y.length;
+		arrayCopy(c1y, 0, der, derLen, c1y.length);
+		derLen += c1y.length;
+		
+		der[derLen++] = 0x04;
+		der[derLen++] = c3.length;
+		arrayCopy(c3, 0, der, derLen, c3.length);
+		derLen += c3.length;
+		
+		arrayCopy(c2Tag, 0, der, derLen, c2Tag.length);
+		derLen += c2Tag.length;
+		arrayCopy(c2, 0, der, derLen, c2.length);
+		
+		return der;
+	},
+	derDecode:function(der){
+		var pos = 0;
+		var totalLen = 0;
+		
+		if(der[pos++] != 0x30){
+			return null;
+		}
+		if((der[pos] & 0xFF) <= 0x7F){
+//			totalLen = der[pos++] & 0xFF;
+			pos++;
+		}else{
+			pos += (der[pos] & 0x7F)+1;
+		}
+		
+		pos++;
+		var c1xLen = der[pos];
+		var c1x = new Array(c1xLen);
+		arrayCopy(der, ++pos , c1x, 0, c1xLen);
+		pos += c1xLen;
+		
+		pos++;
+		var c1yLen = der[pos];
+		var c1y = new Array(c1yLen);
+		arrayCopy(der, ++pos , c1y, 0, c1yLen);
+		pos += c1yLen;
+		
+		pos++;
+		var c3Len = der[pos];
+		var c3 = new Array(c3Len);
+		arrayCopy(der, ++pos , c3, 0, c3Len);
+		pos += c3Len;
+		
+		pos++;
+		var c2Len = 0;
+		if((der[pos] & 0xFF) <= 0x7F){
+			c2Len = der[pos] & 0xFF;
+		}else{
+			for(var i = 0,j = (der[pos] & 0x7F)-1;i<(der[pos] & 0x7F);i++,j--){
+				c2Len = c2Len | ((der[pos+i+1]&0xFF) << (j*8)) ;
+			}
+			pos += (der[pos] & 0x7F);
+		}
+		var c2 = new Array(c2Len);
+		arrayCopy(der, ++pos , c2, 0, c2Len);
+		pos += c2Len;
+		
+		return {'c1x': c1x, "c1y":c1y,"c2":c2,"c3":c3};
 	}
 }

@@ -201,5 +201,123 @@ SM4.prototype = {
 		}
 		
 		return plain;
+	},
+	encrypt_cbc:function(key,iv,data){
+		if(key == undefined || key == null || key.length%16 != 0){
+			console.log("sm4 key is error!");
+			return null;
+		}
+		if(data == undefined || data == null || data.length <= 0){
+			console.log("data is error!");
+			return null;
+		}
+		if(iv == undefined || iv == null || iv.length%16 != 0){
+			console.log("iv is error!");
+			return null;
+		}
+		var rk = this.expandKey(key);
+		/*if(debug){
+			var rkb = intArrayToByteArray(rk);
+			console.log(Hex.encode(rkb,0,rkb.length));
+		}*/
+		
+		var blockLen = 16;
+		var loop = parseInt(data.length/blockLen);//注意不能整除会有小数，要取整
+		var cipher = new Array((loop+1)*blockLen);
+		var tmp = new Array(blockLen);
+		var oneCipher = null;
+		
+		for(var i = 0;i<loop;i++){
+			arrayCopy(data,i*blockLen,tmp,0,blockLen);
+			for(var j = 0;j<blockLen;j++){
+				tmp[j] = tmp[j] ^ iv[j];
+			}
+			iv = this.one_encrypt(rk,tmp);
+			arrayCopy(iv,0,cipher,i*blockLen,blockLen);
+		}
+		
+		var lessData = new Array(data.length%blockLen);
+		if(lessData.length > 0){
+			arrayCopy(data,loop*blockLen,lessData,0,data.length%blockLen);
+		}
+		var padding = this.pkcs7padding(lessData,1);
+		for(var i = 0;i<blockLen;i++){
+			padding[i] = padding[i] ^ iv[i];
+		}
+		iv = this.one_encrypt(rk,padding);
+		arrayCopy(iv,0,cipher,loop*blockLen,blockLen);
+		
+		return cipher;
+	},
+	decrypt_cbc:function(key,iv,data){
+		if(key == undefined || key == null || key.length%16 != 0){
+			console.log("sm4 key is error!");
+			return null;
+		}
+		if(data == undefined || data == null || data.length%16 != 0){
+			console.log("data is error!");
+			return null;
+		}
+		if(iv == undefined || iv == null || iv.length%16 != 0){
+			console.log("iv is error!");
+			return null;
+		}
+		var rk = this.expandKey(key);
+		var nrk = new Array(32);
+		for(var i = 0;i<rk.length;i++){
+			nrk[i] = rk[32-i-1];
+		}
+		/*if(debug){
+			var rkb = intArrayToByteArray(rk);
+			console.log(Hex.encode(rkb,0,rkb.length));
+		}*/
+		var blockLen = 16;
+		var loop = data.length/blockLen;
+		var tmp = new Array(blockLen);
+		var onePlain = null;
+		var plain = null;
+		
+		
+		//解密
+		plain = new Array(data.length);
+		for(var i = 0;i<loop;i++){
+			arrayCopy(data,i*blockLen,tmp,0,blockLen);
+			onePlain = this.one_encrypt(nrk,tmp);
+			for(var j = 0;j<blockLen;j++){
+				onePlain[j] = onePlain[j] ^ iv[j];
+			}
+			arrayCopy(tmp,0,iv,0,blockLen);
+			arrayCopy(onePlain,0,plain,i*blockLen,blockLen);
+		}
+		
+		//去填充，确定数据长度
+		//arrayCopy(data,data.length-blockLen,tmp,0,blockLen);
+		var lastPart = this.pkcs7padding(onePlain,0);
+		
+		var realPlain = new Array(plain.length-blockLen+lastPart.length);
+		arrayCopy(plain,0,realPlain,0,plain.length-blockLen);
+		arrayCopy(lastPart,0,realPlain,plain.length-blockLen,lastPart.length);
+		
+		
+		//先解密最后一部分，确定数据长度
+		/*arrayCopy(data,loop*blockLen,tmp,0,blockLen);
+		onePlain = this.one_encrypt(nrk,tmp);
+		for(var i = 0;i<blockLen;i++){
+			onePlain[i] = onePlain[i] ^ iv[i];
+		}
+		var lastPart = this.pkcs7padding(onePlain,0);
+		
+		plain = new Array(loop*blockLen+lastPart.length);
+		arrayCopy(lastPart,0,plain,loop*blockLen,lastPart.length);
+		
+		//解密剩下部分数据
+		for(var i = 0;i<loop;i++){
+			arrayCopy(data,i*blockLen,tmp,0,blockLen);
+			onePlain = this.one_encrypt(nrk,tmp);
+			arrayCopy(onePlain,0,plain,i*blockLen,blockLen);
+		}*/
+		
+		
+		return realPlain;
 	}
 }
