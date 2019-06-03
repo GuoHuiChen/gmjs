@@ -234,9 +234,20 @@ SM2.prototype = {
 		//2、点（x1,y1）与私钥k相乘，得到（x2,y2）
 		//3、x2y2通过kdf算法得到字符串t，t再和密文c2做异或运算，得到明文M
 		//4、x2||M||y2 拼接，然后做sm3运算，得到hash值，对比密文的c3，一致则解密成功
+		for(var i = 0;i<c1.length;i++){
+			c1[i] = 0;
+		}
+		if(dec["c1x"].length <= 32){//由于c1x/y两个元素长度可能不等于32，须调整为32
+			arrayCopy(dec["c1x"], 0, c1, 1+(32-dec["c1x"].length), dec["c1x"].length);
+		}else{
+			arrayCopy(dec["c1x"], dec["c1x"].length-32, c1, 1, 32);
+		}
+		if(dec["c1y"].length <= 32){
+			arrayCopy(dec["c1y"], 0, c1, 1+32+(32-dec["c1y"].length), dec["c1y"].length);
+		}else{
+			arrayCopy(dec["c1y"], dec["c1y"].length-32, c1, 1+32, 32);
+		}
 		
-		arrayCopy(dec["c1x"], dec["c1x"].length-32, c1, 1, 32);
-		arrayCopy(dec["c1y"], dec["c1y"].length-32, c1, 1+32, 32);
 		c1[0] = 0x04;
 		var c1Point = ECPointFp.decodeFromHex(this.ecCurve,Hex.encode(c1,0,c1.length));
 		
